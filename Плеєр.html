@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Music Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            width: 380px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .artwork-container {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .artwork-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .playing img {
+            transform: scale(1.05);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            cursor: pointer;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #ffffff;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .controls button {
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .controls button:hover {
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .play-pause-btn {
+            background: #ffffff;
+            color: #000000 !important;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-pause-btn:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .playlist-drawer {
+            margin-top: 20px;
+            max-height: 180px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+
+        .playlist-drawer::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .playlist-drawer::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .playlist-item.active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-item.active .song-name {
+            color: #1DB954;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-card">
+        <!-- Artwork -->
+        <div id="art-container" class="artwork-container">
+            <img id="main-art" src="" alt="Обкладинка">
+        </div>
+
+        <!-- Information -->
+        <div class="text-center mb-6">
+            <h2 id="main-title" class="text-xl font-bold truncate px-4">Завантаження...</h2>
+            <p id="main-artist" class="text-sm text-gray-400 mt-1">...</p>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress-area" class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-gray-500 -mt-3 mb-4">
+            <span id="time-current">0:00</span>
+            <span id="time-total">0:00</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls flex items-center justify-between px-6 mb-8">
+            <button class="text-lg"><i class="fas fa-random opacity-30"></i></button>
+            <button onclick="prev()" class="text-2xl"><i class="fas fa-step-backward"></i></button>
+            <button onclick="togglePlay()" class="play-pause-btn">
+                <i id="play-icon" class="fas fa-play text-xl ml-1"></i>
+            </button>
+            <button onclick="next()" class="text-2xl"><i class="fas fa-step-forward"></i></button>
+            <button class="text-lg"><i class="fas fa-redo opacity-30"></i></button>
+        </div>
+
+        <!-- Playlist -->
+        <div id="mini-playlist" class="playlist-drawer"></div>
+    </div>
+
+    <audio id="audio-engine"></audio>
+
+    <script>
+        const audio = document.getElementById('audio-engine');
+        const playIcon = document.getElementById('play-icon');
+        const artContainer = document.getElementById('art-container');
+        
+        let playlist = [
+            {
+                title: "Falling",
+                artist: "Trevor Daniel",
+                art: "https://meloua.com/storage/covers/song/7192_300.jpg",
+                url: "https://fs.meloua.com/dl/72cb6df5058ec2f0c11b853d385b523f/trevor-daniel-falling-(meloua.com)/1007191.mp3"
+            },
+            {
+                title: "Paint The Town Red",
+                artist: "Doja Cat",
+                art: "https://meloua.com/storage/covers/song/7190_300.jpg",
+                url: "https://fs.meloua.com/dl/e57650000903581a021638b8d8ecb5e8/doja-cat-paint-the-town-red-(meloua.com)/1007189.mp3"
+            },
+            {
+                title: "Sunroof",
+                artist: "Nicky Youre",
+                art: "https://meloua.com/storage/covers/song/7184_300.jpg",
+                url: "https://fs.meloua.com/dl/c2c77a0fee678787fbf7c77549140c0b/nicky-youre-hey-daisy-sunroof-(meloua.com)/1007183.mp3"
+            },
+            {
+                title: "Roses (Remix)",
+                artist: "SAINt JHN",
+                art: "https://meloua.com/storage/covers/song/7187_300.jpg",
+                url: "https://fs.meloua.com/dl/10174727632eef56fb3d4c1554b0bdb1/saint-jhn-imanbek-roses-remix-(meloua.com)/1007186.mp3"
+            },
+            {
+                title: "Wait a Minute!",
+                artist: "WILLOW",
+                art: "https://meloua.com/storage/covers/song/7100_300.jpg",
+                url: "https://fs.meloua.com/dl/daf58b0bc11cac4d6e1b182086bf083c/willow-wait-a-minute-(meloua.com)/1007099.mp3"
+            },
+            {
+                title: "Lalala",
+                artist: "Y2K & bbno$",
+                art: "https://meloua.com/storage/covers/song/7086_300.jpg",
+                url: "https://fs.meloua.com/dl/b3e0e8ebdb95eb2001bfff7d14a68bd1/y2k-bbno-lalala-(meloua.com)/1007085.mp3"
+            },
+            {
+                title: "Still Don't Know My Name",
+                artist: "Labrinth",
+                art: "https://meloua.com/storage/covers/song/7073_300.jpg",
+                url: "https://fs.meloua.com/dl/d89f723179a4d148a0a5f064a9a1afd0/labrinth-still-dont-know-my-name-(meloua.com)/1007072.mp3"
+            },
+            {
+                title: "Efecto",
+                artist: "Bad Bunny",
+                art: "https://meloua.com/storage/covers/song/7058_300.jpg",
+                url: "https://fs.meloua.com/dl/6da88d192e755d23b82b4c978fab2772/bad-bunny-efecto-(meloua.com)/1007057.mp3"
+            },
+            {
+                title: "Lose Yourself",
+                artist: "Eminem",
+                art: "https://meloua.com/storage/covers/song/7015_300.jpg",
+                url: "https://fs.meloua.com/dl/e63d3dafbc52b0b4c9efa25a2ecf3475/eminem-lose-yourself-(meloua.com)/1007014.mp3"
+            },
+            {
+                title: "10:35",
+                artist: "Tiësto & Tate McRae",
+                art: "https://meloua.com/storage/covers/song/6896_300.jpg",
+                url: "https://fs.meloua.com/dl/2d522b8a188823e612948caaa969fd89/tiesto-tate-mcrae-10-35-(meloua.com)/1006895.mp3"
+            },
+            {
+                title: "greedy",
+                artist: "Tate McRae",
+                art: "https://meloua.com/storage/covers/song/4204_300.jpg",
+                url: "https://fs.meloua.com/dl/f5f5c2c2c6b0d987e49adf9a96717fe7/tate-mcrae-greedy-(meloua.com)/1004203.mp3"
+            },
+            {
+                title: "i like the way you kiss me (remix)",
+                artist: "Artemas & southstar",
+                art: "https://meloua.com/storage/covers/song/6895_300.jpg",
+                url: "https://fs.meloua.com/dl/24cc992c65e5bbccf756ea182b985da0/artemas-southstar-i-like-the-way-you-kiss-me-remix-(meloua.com)/1006894.mp3"
+            }
+        ];
+
+        let currentIndex = 0;
+
+        function updateUI() {
+            const song = playlist[currentIndex];
+            document.getElementById('main-title').innerText = song.title;
+            document.getElementById('main-artist').innerText = song.artist;
+            document.getElementById('main-art').src = song.art;
+            
+            const listContainer = document.getElementById('mini-playlist');
+            listContainer.innerHTML = '';
+            playlist.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = `playlist-item ${i === currentIndex ? 'active' : ''}`;
+                div.innerHTML = `
+                    <img src="${item.art}" class="w-10 h-10 rounded-lg object-cover">
+                    <div class="overflow-hidden">
+                        <div class="song-name text-xs font-semibold truncate">${item.title}</div>
+                        <div class="text-[10px] text-gray-500 truncate">${item.artist}</div>
+                    </div>
+                `;
+                div.onclick = () => { currentIndex = i; loadAndPlay(); };
+                listContainer.appendChild(div);
+            });
+        }
+
+        function loadAndPlay() {
+            audio.src = playlist[currentIndex].url;
+            audio.play().catch(e => console.warn("Playback blocked or failed"));
+            playIcon.className = "fas fa-pause text-xl";
+            artContainer.classList.add('playing');
+            updateUI();
+        }
+
+        function togglePlay() {
+            if (!audio.src) { loadAndPlay(); return; }
+            if (audio.paused) {
+                audio.play();
+                playIcon.className = "fas fa-pause text-xl";
+                artContainer.classList.add('playing');
+            } else {
+                audio.pause();
+                playIcon.className = "fas fa-play text-xl ml-1";
+                artContainer.classList.remove('playing');
+            }
+        }
+
+        function next() {
+            currentIndex = (currentIndex + 1) % playlist.length;
+            loadAndPlay();
+        }
+
+        function prev() {
+            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            loadAndPlay();
+        }
+
+        audio.ontimeupdate = () => {
+            if (isNaN(audio.duration)) return;
+            const progress = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            
+            const format = (t) => {
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60);
+                return m + ":" + s.toString().padStart(2, '0');
+            };
+            document.getElementById('time-current').innerText = format(audio.currentTime);
+            document.getElementById('time-total').innerText = format(audio.duration);
+        };
+
+        audio.onended = next;
+
+        document.getElementById('progress-area').onclick = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
+        };
+
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
+
