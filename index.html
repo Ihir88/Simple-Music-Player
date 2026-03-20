@@ -30,6 +30,7 @@
             padding: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .artwork-container {
@@ -40,6 +41,10 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-bottom: 24px;
             position: relative;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .artwork-container img {
@@ -135,6 +140,27 @@
         .playlist-item.active .song-name {
             color: #1DB954;
         }
+
+        .add-music-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 10px;
+            border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .add-music-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: #ffffff;
+            border-color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -161,7 +187,7 @@
         </div>
 
         <!-- Controls -->
-        <div class="controls flex items-center justify-between px-6 mb-8">
+        <div class="controls flex items-center justify-between px-6 mb-4">
             <button class="text-lg"><i class="fas fa-random opacity-30"></i></button>
             <button onclick="prev()" class="text-2xl"><i class="fas fa-step-backward"></i></button>
             <button onclick="togglePlay()" class="play-pause-btn">
@@ -173,6 +199,13 @@
 
         <!-- Playlist -->
         <div id="mini-playlist" class="playlist-drawer"></div>
+
+        <!-- Add Local Files -->
+        <button onclick="document.getElementById('file-input').click()" class="add-music-btn">
+            <i class="fas fa-plus"></i>
+            Додати музику з телефону
+        </button>
+        <input type="file" id="file-input" multiple accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
     </div>
 
     <audio id="audio-engine"></audio>
@@ -250,20 +283,58 @@
                 url: "https://fs.meloua.com/dl/f5f5c2c2c6b0d987e49adf9a96717fe7/tate-mcrae-greedy-(meloua.com)/1004203.mp3"
             },
             {
-                title: "i like the way you kiss me (remix)",
+                title: "i like the way you kiss me",
                 artist: "Artemas & southstar",
                 art: "https://meloua.com/storage/covers/song/6895_300.jpg",
                 url: "https://fs.meloua.com/dl/24cc992c65e5bbccf756ea182b985da0/artemas-southstar-i-like-the-way-you-kiss-me-remix-(meloua.com)/1006894.mp3"
+            },
+            {
+                title: "Left and Right",
+                artist: "Charlie Puth & Jung Kook",
+                art: "https://meloua.com/storage/covers/song/7092_300.jpg",
+                url: "https://fs.meloua.com/dl/f637be42f58e635facfc946ee5c0831e/charlie-puth-jung-kook-bts-left-and-right-(meloua.com)/1007091.mp3"
+            },
+            {
+                title: "APT",
+                artist: " ROSÉ, Bruno Mars",
+                url: "https://fs.meloua.com/dl/83d061313f4113d2086b5448f40778ba/rose-bruno-mars-apt-(meloua.com)/1006422.mp3",
+                art: "https://meloua.com/storage/covers/song/6423_300.jpg"
+            },
+            {
+                title: "Don't Start Now",
+                artist: "Dua Lipa",
+                art: "https://meloua.com/storage/covers/song/7182_300.jpg",
+                url: "https://fs.meloua.com/dl/57a602354181b8440ea978ecc3dedfc9/dua-lipa-dont-start-now-(meloua.com)/1007181.mp3"
+            },
+            {
+                title: "Jump",
+                artist: "BLACKPINK",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRIczQ4JW2IdrEgNZwSbSiwZtjy4adA5zZ5mtZzox6HZA&s=10",
+                url: "https://rapid.spotidown.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlbmFtZSI6IkpVTVAgLSBCTEFDS1BJTksiLCJpYXQiOjE3NzM5ODcwODMsImV4cCI6MTc3Mzk5MDY4MywidXJsIjoiTmxCTlJEWjZOMEpTVmtWelZFTkJSRkl2Vm5aWVNFRndXVlZMVG5GWlpYa3pVekpCTlN0NGRXeFJXRFJrYTA5RFZXSXJSV05JTW1SMkt6ZENabTUyVWtkQk9GaFpjR1ZPU2l0TGFqTTNaRVJGZWpCMFNWaHZNMlJKUTFKb1Ewc3paMkZxU1dOTVRVaGlVelp0Y0ZaclZHZEVNVkYyT0V3eFdsUnlibmc0VTA5MWQybHJhV05QWkROaFJuVnZRV1oyYlVZMVltRnJSRFJzUW1adE1WTmtaVVFyT1d4cVdtSnZkMWg0TlRZMVNVRnhMelZVV201QlpteG9NRmR5YkhVMVdubFpOVGR6VjI1c1MyYzBZV0ZsU0N0NWFtNXNXWGQ0UTJGTE5HUlhTRVJPSzJ0eksyRkZXVXRNUmpCWWRuWkNXaXRHTmtNM1VuTjRUVVp1Y0c4MlowaHpORnBoUXpVeFUyUjRZMk41TmxaSVNXcEhWRk5ZWjBGTFJrRXhjbEJTVDI5RFdrNUpXbk5JVVRFelpuUmphVTFQWmpORlZEbDNlVkJyTW1WSFNGcDNSVEZQVjA1SE4xVndRWFp3VlVoMGRHTkVhVWREWmxac2VVbDNXa3BRYVdGbVFsRTRRMlZqTXpJM1ZHaG5OMDB3Y2tjNVVEbEJRWGwxY0hKTFJXbENRalJLVVVoRGQwOVJPVEJ0VTFCb1owdEVWR2RrVXpKWFRuUnZlbW80T0RKNFNuRmlSRmhOTlVkVGJFdDJWVVp0VUhoVWRIQXdTekZRWld3NVVIQTJkSEZLWlVaVE9Gb3JlRXhZUVd0SlptaHNVMnQ2TTFGM1RUUndhV00yUlZSQlZHUkJibFJKY1hkRllqRkdZMlJrWVZObWVqQjVkRXd6VTBnelJtTjVVVFpJTDBReFZreHhjRzlFUldWTGRWQjFRMHgwVTJWUk9EUTFSa2hHUm5oT1VXUTRZbXcwU0Zaa1EzTkJQUT09In0.9F3RNsyeXpndKnH4jTMVl1dyVsXe3nb_u3BambPVa18"
+            },
+            {
+                title: "Mon amour, mon ami",
+                artist: "Marie Laforêt",
+                art: "https://i.scdn.co/image/ab67616d0000b273eb53bc0564afb482a622bd78",
+                url: "https://rapid.spotidown.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlbmFtZSI6Ik1vbiBhbW91ciwgbW9uIGFtaSAtIE1hcmllIExhZm9yXHUwMGVhdCIsImlhdCI6MTc3Mzk4Nzc3MSwiZXhwIjoxNzczOTkxMzcxLCJ1cmwiOiJSakIwYTI5dWEwNHpVREZPTW05d2VWUlRRemhzT1ZScFdHaFhXV3B0TlVkNVRuRndhbWMxYldnd2VIQktNM2RPVkdaQ1JWQnRZMFZyU3psVFlVVm9XVEZ4YUVnMGFWSlliMnRhWVVkSFRUWkhibU54YjBFOVBRPT0ifQ.drQQ-qejndQqMNZVg66RFEE0AQ7lM0cPqEdUGgloZkQ"
+            },
+            {
+                title: "Go",
+                artist: "BLACKPINK",
+                art: "https://i.scdn.co/image/ab67616d0000b2738db56c674b13b3a4c6a4dbb8",
+                url: "https://rapid.spotidown.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlbmFtZSI6IkdPIC0gQkxBQ0tQSU5LIiwiaWF0IjoxNzczOTg4MDcwLCJleHAiOjE3NzM5OTE2NzAsInVybCI6Ik5sQk5SRFo2TjBKU1ZrVnpWRU5CUkZJdlZuWllTRUZ3V1ZWTFRuRlpaWGt6VXpKQk5TdDRkV3hSV0RSa2EwOURWV0lyUldOSU1tUjJLemRDWm01MlVrZEJPRmhaY0dWT1NpdExhak0zWkVSRmVqQjBTV0ZGUjNOTVNucGFSV2hHWm5CTk56ZFFja3QxVWtaa1QzaEpaMFZpV2tSTGNrVnNWa2M1VWtObVdXTk1WbWRHUWpOaVNEbHlTMVI0YjNKQ1pWRm5WRUZMU0RaTGVXbEJibm92T1hKR1dscEVkMEpzU1habE5IQTVTRVEyTHpWWWVYcFRRa2wzTDNCSlJEQnhUR3MxWVdvdlpsRldNMWhHYVVoUGNrOTZLMjB2TVVOT09GbEJRMGxMYkVZd01VRm9VaTgzTjB4eE4yVjRNMlUzYkV3MFoycDNaamxvYjJWdmNsRm5kR1JGVmk5SWVGaGplQzh6VmtoMlREVXZhM2h1YmpsTk1VYzRUMEV2WWpkSFNGRjRXWFZ3UVZsRFkzTXdSVFYwYWxsSlNUSnNRWFprVHpNelluWXhSVm96VUhCcWN6VkxlamR2T1UxTFNHeDVaSFl3VnpCamNuY3ZPWGRpVjFCcll6RndVV0ZoYjJrelNISnZkRXhRWkhCdmVDdHFVazQ1YTJGclVsSnFZbTUzVVVod1ZXdFROMEZtU2tsak1HVlJTMjFUUnpsbVozWm1SalJWY0NzMVJEQkNVMHd6ZVRGalVFSm5hWEpFUVU5QmJVSjVTRmxJY21NeEwwMU9PR05pZFhkeWRtcEVhMFJtU1ZCc2NXOUVja3htVG5CSGJraFhhelZ3WjBkU1NsVmpPRTEzYVdSdVJqaHlkRTR3WjB0bE1EZDFaMmhWUlU0d1owb3JSWGRJVURFMGVuVk9WRlUxUWpFMU5VMW1Za1JHYmpWM1VHMWtSVGxVY0UxS1pVcGFhRGw1SzFKaWJsUm1OME5yUFE9PSJ9.J6UUwYLVyv99xQXUs6N7571d3fDPYvG919MaZDTg8E8"
             }
         ];
+        
 
         let currentIndex = 0;
+        const DEFAULT_ART = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop";
 
         function updateUI() {
             const song = playlist[currentIndex];
             document.getElementById('main-title').innerText = song.title;
             document.getElementById('main-artist').innerText = song.artist;
-            document.getElementById('main-art').src = song.art;
+            document.getElementById('main-art').src = song.art || DEFAULT_ART;
             
             const listContainer = document.getElementById('mini-playlist');
             listContainer.innerHTML = '';
@@ -271,7 +342,7 @@
                 const div = document.createElement('div');
                 div.className = `playlist-item ${i === currentIndex ? 'active' : ''}`;
                 div.innerHTML = `
-                    <img src="${item.art}" class="w-10 h-10 rounded-lg object-cover">
+                    <img src="${item.art || DEFAULT_ART}" class="w-10 h-10 rounded-lg object-cover">
                     <div class="overflow-hidden">
                         <div class="song-name text-xs font-semibold truncate">${item.title}</div>
                         <div class="text-[10px] text-gray-500 truncate">${item.artist}</div>
@@ -280,6 +351,28 @@
                 div.onclick = () => { currentIndex = i; loadAndPlay(); };
                 listContainer.appendChild(div);
             });
+
+            // Auto scroll to active item
+            const activeItem = listContainer.querySelector('.active');
+            if(activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                const url = URL.createObjectURL(file);
+                // Simple parsing of filename to title/artist
+                let name = file.name.replace(/\.[^/.]+$/, ""); // remove extension
+                let parts = name.split(" - ");
+                
+                playlist.push({
+                    title: parts[1] || parts[0],
+                    artist: parts[1] ? parts[0] : "Локальний файл",
+                    url: url,
+                    art: null // Use default
+                });
+            }
+            updateUI();
         }
 
         function loadAndPlay() {
