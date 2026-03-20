@@ -2,18 +2,24 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Simple Music Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
+        :root {
+            --primary-accent: #1DB954;
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
+        }
+
         body {
-            background-color: #0f0f0f;
+            background-color: #080808;
             color: #ffffff;
             font-family: 'Inter', sans-serif;
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -21,194 +27,241 @@
             overflow: hidden;
         }
 
+        /* Динамічний живий фон */
+        .bg-glow {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(29, 185, 84, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(29, 185, 84, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            filter: blur(60px);
+            animation: pulseBg 10s infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.1); }
+        }
+
         .player-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            width: 380px;
-            padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            width: 92%;
+            max-width: 450px;
+            padding: 32px;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.9);
             position: relative;
+            z-index: 10;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* Адаптація для ПЛАНШЕТІВ та ПОВНОГО ЕКРАНУ */
+        @media (min-width: 768px), (display-mode: fullscreen) {
+            .player-card {
+                max-width: 900px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                padding: 48px;
+            }
+            .artwork-container { margin-bottom: 0 !important; }
+            .info-section { display: flex; flex-direction: column; justify-content: center; }
+            .playlist-drawer { max-height: 250px !important; margin-top: 30px; }
         }
 
         .artwork-container {
             width: 100%;
             aspect-ratio: 1/1;
-            border-radius: 16px;
+            border-radius: 28px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            margin-bottom: 24px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            background: #121212;
             position: relative;
-            background: #1a1a1a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transform-style: preserve-3d;
         }
 
         .artwork-container img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
+            transition: transform 1.2s cubic-bezier(0.2, 0, 0.2, 1);
         }
 
         .playing img {
-            transform: scale(1.05);
+            transform: scale(1.08);
+            animation: breathe 5s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1.08); }
+            50% { transform: scale(1.15); }
         }
 
         .progress-bar {
             width: 100%;
-            height: 4px;
+            height: 8px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
+            border-radius: 20px;
             cursor: pointer;
-            margin: 20px 0;
+            margin: 20px 0 10px 0;
             position: relative;
+            overflow: visible;
         }
 
         .progress-fill {
             height: 100%;
-            background: #ffffff;
-            border-radius: 2px;
+            background: linear-gradient(90deg, #ffffff 0%, var(--primary-accent) 100%);
+            border-radius: 20px;
             width: 0%;
-            transition: width 0.1s linear;
+            position: relative;
+            box-shadow: 0 0 15px rgba(29, 185, 84, 0.4);
         }
 
-        .controls button {
-            transition: all 0.2s ease;
-            color: rgba(255, 255, 255, 0.8);
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: -4px; top: 50%;
+            transform: translateY(-50%);
+            width: 14px; height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .controls button:hover {
-            color: #ffffff;
-            transform: scale(1.1);
-        }
+        .progress-bar:hover .progress-fill::after { opacity: 1; }
 
         .play-pause-btn {
             background: #ffffff;
             color: #000000 !important;
-            width: 56px;
-            height: 56px;
+            width: 72px; height: 72px;
             border-radius: 50%;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: center; justify-content: center;
+            box-shadow: 0 15px 30px rgba(255,255,255,0.15);
+            transition: transform 0.2s, background 0.2s;
         }
 
-        .play-pause-btn:hover {
-            transform: scale(1.05) !important;
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
-        }
+        .play-pause-btn:hover { transform: scale(1.05); background: #f0f0f0; }
+        .play-pause-btn:active { transform: scale(0.95); }
 
         .playlist-drawer {
-            margin-top: 20px;
-            max-height: 180px;
+            margin-top: 24px;
+            max-height: 160px;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.1) transparent;
-        }
-
-        .playlist-drawer::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .playlist-drawer::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
+            scrollbar-width: none;
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
         }
 
         .playlist-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 8px;
-            border-radius: 12px;
+            gap: 14px;
+            padding: 12px;
+            border-radius: 18px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s;
+            margin-bottom: 4px;
         }
 
-        .playlist-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
+        .playlist-item:hover { background: rgba(255, 255, 255, 0.08); }
         .playlist-item.active {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(29, 185, 84, 0.15);
+            border-left: 4px solid var(--primary-accent);
         }
 
-        .playlist-item.active .song-name {
-            color: #1DB954;
+        .fullscreen-toggle {
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 44px; height: 44px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            z-index: 100;
         }
 
-        .add-music-btn {
-            width: 100%;
-            margin-top: 16px;
-            padding: 10px;
-            border: 1px dashed rgba(255,255,255,0.2);
-            border-radius: 12px;
-            font-size: 12px;
+        /* Хромований ефект для кнопок */
+        .ctrl-btn {
             color: rgba(255,255,255,0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
+            font-size: 1.2rem;
+            padding: 10px;
         }
-
-        .add-music-btn:hover {
-            background: rgba(255,255,255,0.05);
-            color: #ffffff;
-            border-color: #ffffff;
-        }
+        .ctrl-btn:hover { color: white; }
+        .active-mode { color: var(--primary-accent) !important; text-shadow: 0 0 10px rgba(29, 185, 84, 0.5); }
     </style>
 </head>
 <body>
 
-    <div class="player-card">
-        <!-- Artwork -->
-        <div id="art-container" class="artwork-container">
-            <img id="main-art" src="" alt="Обкладинка">
-        </div>
+    <div class="bg-glow"></div>
 
-        <!-- Information -->
-        <div class="text-center mb-6">
-            <h2 id="main-title" class="text-xl font-bold truncate px-4">Завантаження...</h2>
-            <p id="main-artist" class="text-sm text-gray-400 mt-1">...</p>
-        </div>
-
-        <!-- Progress -->
-        <div id="progress-area" class="progress-bar">
-            <div id="progress-fill" class="progress-fill"></div>
-        </div>
-        <div class="flex justify-between text-[10px] text-gray-500 -mt-3 mb-4">
-            <span id="time-current">0:00</span>
-            <span id="time-total">0:00</span>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls flex items-center justify-between px-6 mb-4">
-            <button class="text-lg"><i class="fas fa-random opacity-30"></i></button>
-            <button onclick="prev()" class="text-2xl"><i class="fas fa-step-backward"></i></button>
-            <button onclick="togglePlay()" class="play-pause-btn">
-                <i id="play-icon" class="fas fa-play text-xl ml-1"></i>
-            </button>
-            <button onclick="next()" class="text-2xl"><i class="fas fa-step-forward"></i></button>
-            <button class="text-lg"><i class="fas fa-redo opacity-30"></i></button>
-        </div>
-
-        <!-- Playlist -->
-        <div id="mini-playlist" class="playlist-drawer"></div>
-
-        <!-- Add Local Files -->
-        <button onclick="document.getElementById('file-input').click()" class="add-music-btn">
-            <i class="fas fa-plus"></i>
-            Додати музику з телефону
+    <div class="player-card" id="player-main">
+        <button onclick="toggleFullscreen()" class="fullscreen-toggle" title="Повний екран">
+            <i id="fs-icon" class="fas fa-expand"></i>
         </button>
-        <input type="file" id="file-input" multiple accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
+
+        <!-- Ліва частина: Обкладинка -->
+        <div id="art-container" class="artwork-container">
+            <img id="main-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&h=600&auto=format&fit=crop" alt="Cover">
+        </div>
+
+        <!-- Права частина: Керування -->
+        <div class="info-section">
+            <div class="mb-6">
+                <h2 id="main-title" class="text-2xl md:text-3xl font-bold truncate">Завантаження...</h2>
+                <p id="main-artist" class="text-base text-gray-400 mt-2 font-medium">Будь ласка, зачекайте</p>
+            </div>
+
+            <!-- Прогрес -->
+            <div class="mb-6">
+                <div id="progress-area" class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div class="flex justify-between text-xs font-semibold text-gray-500">
+                    <span id="time-current">0:00</span>
+                    <span id="time-total">0:00</span>
+                </div>
+            </div>
+
+            <!-- Основні кнопки -->
+            <div class="flex items-center justify-between mb-8">
+                <button onclick="toggleShuffle()" id="shuffle-btn" class="ctrl-btn">
+                    <i class="fas fa-random"></i>
+                </button>
+                <div class="flex items-center gap-6">
+                    <button onclick="prev()" class="text-3xl hover:scale-110 transition-transform">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button onclick="togglePlay()" class="play-pause-btn">
+                        <i id="play-icon" class="fas fa-play text-2xl ml-1"></i>
+                    </button>
+                    <button onclick="next()" class="text-3xl hover:scale-110 transition-transform">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
+                <button onclick="toggleRepeat()" id="repeat-btn" class="ctrl-btn">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+
+            <!-- Міні-плейлист -->
+            <div id="mini-playlist" class="playlist-drawer"></div>
+
+            <!-- Завантаження файлів -->
+            <button onclick="document.getElementById('file-input').click()" class="w-full mt-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-xs font-bold uppercase tracking-wider text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-3">
+                <i class="fas fa-plus-circle"></i>
+                Додати музику
+            </button>
+            <input type="file" id="file-input" multiple accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
+        </div>
     </div>
 
-    <audio id="audio-engine"></audio>
+    <audio id="audio-engine" preload="auto"></audio>
 
     <script>
         const audio = document.getElementById('audio-engine');
@@ -323,18 +376,25 @@
                 artist: "BLACKPINK",
                 art: "https://i.scdn.co/image/ab67616d0000b2738db56c674b13b3a4c6a4dbb8",
                 url: "https://rapid.spotidown.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlbmFtZSI6IkdPIC0gQkxBQ0tQSU5LIiwiaWF0IjoxNzczOTg4MDcwLCJleHAiOjE3NzM5OTE2NzAsInVybCI6Ik5sQk5SRFo2TjBKU1ZrVnpWRU5CUkZJdlZuWllTRUZ3V1ZWTFRuRlpaWGt6VXpKQk5TdDRkV3hSV0RSa2EwOURWV0lyUldOSU1tUjJLemRDWm01MlVrZEJPRmhaY0dWT1NpdExhak0zWkVSRmVqQjBTV0ZGUjNOTVNucGFSV2hHWm5CTk56ZFFja3QxVWtaa1QzaEpaMFZpV2tSTGNrVnNWa2M1VWtObVdXTk1WbWRHUWpOaVNEbHlTMVI0YjNKQ1pWRm5WRUZMU0RaTGVXbEJibm92T1hKR1dscEVkMEpzU1habE5IQTVTRVEyTHpWWWVYcFRRa2wzTDNCSlJEQnhUR3MxWVdvdlpsRldNMWhHYVVoUGNrOTZLMjB2TVVOT09GbEJRMGxMYkVZd01VRm9VaTgzTjB4eE4yVjRNMlUzYkV3MFoycDNaamxvYjJWdmNsRm5kR1JGVmk5SWVGaGplQzh6VmtoMlREVXZhM2h1YmpsTk1VYzRUMEV2WWpkSFNGRjRXWFZ3UVZsRFkzTXdSVFYwYWxsSlNUSnNRWFprVHpNelluWXhSVm96VUhCcWN6VkxlamR2T1UxTFNHeDVaSFl3VnpCamNuY3ZPWGRpVjFCcll6RndVV0ZoYjJrelNISnZkRXhRWkhCdmVDdHFVazQ1YTJGclVsSnFZbTUzVVVod1ZXdFROMEZtU2tsak1HVlJTMjFUUnpsbVozWm1SalJWY0NzMVJEQkNVMHd6ZVRGalVFSm5hWEpFUVU5QmJVSjVTRmxJY21NeEwwMU9PR05pZFhkeWRtcEVhMFJtU1ZCc2NXOUVja3htVG5CSGJraFhhelZ3WjBkU1NsVmpPRTEzYVdSdVJqaHlkRTR3WjB0bE1EZDFaMmhWUlU0d1owb3JSWGRJVURFMGVuVk9WRlUxUWpFMU5VMW1Za1JHYmpWM1VHMWtSVGxVY0UxS1pVcGFhRGw1SzFKaWJsUm1OME5yUFE9PSJ9.J6UUwYLVyv99xQXUs6N7571d3fDPYvG919MaZDTg8E8"
+            },
+            {
+                title: "HOME",
+                artist: "Woody",
+                art: "https://i.scdn.co/image/ab67616d0000b273482d66baebad87cc1f4bddb9",
+                url: "https://rapid.spotidown.app/v2?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlbmFtZSI6IkhPTUUgLSBXb29keSIsImlhdCI6MTc3NDAwMDQ3OCwiZXhwIjoxNzc0MDA0MDc4LCJ1cmwiOiJObEJOUkRaNk4wSlNWa1Z6VkVOQlJGSXZWblpZU0VGd1dWVkxUbkZaWlhrelV6SkJOU3Q0ZFd4UldEUmthMDlEVldJclJXTklNbVIyS3pkQ1ptNTJVa2RCT0ZoWmNHVk9TaXRMYWpNM1pFUkZlakIwU1dKaVpWQTVhVGRCZVZZeFZHRnFlV3d6WTBwQldWQTNSR0pYU0RoS1lqUmpNM1YwTDFwQlJHeHVOMlZTYzFGeFZETk5UR2h3Y0hKNWJHcGFPSEowYTBKelRVMU9jbWh6VkhaSmFFaE9UV2t5YTNVMlZUbEtNR3MzVmpRMk5UbEdOekZ3WTJod1ltUXZOM1JWZFhGU1dXbzRlbmRYT1ZaU2IwSjBWRkJETTFWR2VVTm9NM05tV0ZGbk5tMUdWMVJsZUhSQ1YwaFhWRlY1UVZKaGExcGFWVVJyUjFodVZWWTFkRFpUU0VORVRuVklhbm8zU0ZGU1NHSmljR1pGVnpGbFNVWlVaRVZQT0RnMU5XbGpORE0wTjNkeFRGVjFiVmRPVmxSMGVrNUhkRGRsZG5GclVsSmpRbW81VGxWUE9YazJOMXBXWkhacmQwZFZhSHAzUlM5V2JFWmlXVTFoYUhwU1dHUXlkamROZUhkamEwNW9ia0Z3TkhJcldsQlJNSFZSTkRGWGF5OVZRVzFxTldsbGJXOVFTVVpNVjBWclZWUllOREpUSzFrMk1uUjNXRWgwTDJ3dldYZHFSWGxHYms1M00yVmxaRkF5UVhkVlUyOUZORzgzZW00cmRHVTRWMFpKU1ZBM1pYcGtWRGxxVURnMksyOXNaR3RQTWtRMFpqaHVWRVIwZWpJdmVUaDZabHB5YW1jMUwwVkxRek5LTWpKdlpHWTNXVGRzY1Zwb1ZtMXhWMDh2WkdZMWRqZHNWMnR3Ykc0NVJ6a3dkMkZNTjBob01HZEpSRWhWWVRScE0yUlZWV1pvT0VKR09HNWhRM0o1Tm5kWlBRPT0ifQ.nbISAXCXZdmMDEAP2Fkdn7lzNjFbt2QmHEPnAsMEhRA"
+            
+        
             }
         ];
-        
-
         let currentIndex = 0;
-        const DEFAULT_ART = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&auto=format&fit=crop";
+        let isShuffle = false;
+        let isRepeat = false;
 
         function updateUI() {
             const song = playlist[currentIndex];
             document.getElementById('main-title').innerText = song.title;
             document.getElementById('main-artist').innerText = song.artist;
-            document.getElementById('main-art').src = song.art || DEFAULT_ART;
+            document.getElementById('main-art').src = song.art || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&h=600&auto=format&fit=crop";
             
             const listContainer = document.getElementById('mini-playlist');
             listContainer.innerHTML = '';
@@ -342,62 +402,47 @@
                 const div = document.createElement('div');
                 div.className = `playlist-item ${i === currentIndex ? 'active' : ''}`;
                 div.innerHTML = `
-                    <img src="${item.art || DEFAULT_ART}" class="w-10 h-10 rounded-lg object-cover">
+                    <img src="${item.art || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100&h=100&auto=format&fit=crop'}" class="w-12 h-12 rounded-xl object-cover shadow-lg">
                     <div class="overflow-hidden">
-                        <div class="song-name text-xs font-semibold truncate">${item.title}</div>
-                        <div class="text-[10px] text-gray-500 truncate">${item.artist}</div>
+                        <div class="text-sm font-bold truncate">${item.title}</div>
+                        <div class="text-xs text-gray-400 truncate">${item.artist}</div>
                     </div>
                 `;
                 div.onclick = () => { currentIndex = i; loadAndPlay(); };
                 listContainer.appendChild(div);
             });
-
-            // Auto scroll to active item
+            
             const activeItem = listContainer.querySelector('.active');
             if(activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function handleFileUpload(event) {
-            const files = event.target.files;
-            for (let file of files) {
-                const url = URL.createObjectURL(file);
-                // Simple parsing of filename to title/artist
-                let name = file.name.replace(/\.[^/.]+$/, ""); // remove extension
-                let parts = name.split(" - ");
-                
-                playlist.push({
-                    title: parts[1] || parts[0],
-                    artist: parts[1] ? parts[0] : "Локальний файл",
-                    url: url,
-                    art: null // Use default
-                });
-            }
-            updateUI();
-        }
-
-        function loadAndPlay() {
-            audio.src = playlist[currentIndex].url;
-            audio.play().catch(e => console.warn("Playback blocked or failed"));
-            playIcon.className = "fas fa-pause text-xl";
-            artContainer.classList.add('playing');
-            updateUI();
         }
 
         function togglePlay() {
             if (!audio.src) { loadAndPlay(); return; }
             if (audio.paused) {
                 audio.play();
-                playIcon.className = "fas fa-pause text-xl";
+                playIcon.className = "fas fa-pause text-2xl";
                 artContainer.classList.add('playing');
             } else {
                 audio.pause();
-                playIcon.className = "fas fa-play text-xl ml-1";
+                playIcon.className = "fas fa-play text-2xl ml-1";
                 artContainer.classList.remove('playing');
             }
         }
 
+        function loadAndPlay() {
+            audio.src = playlist[currentIndex].url;
+            audio.play().catch(e => console.log("Playback failed:", e));
+            playIcon.className = "fas fa-pause text-2xl";
+            artContainer.classList.add('playing');
+            updateUI();
+        }
+
         function next() {
-            currentIndex = (currentIndex + 1) % playlist.length;
+            if (isShuffle) {
+                currentIndex = Math.floor(Math.random() * playlist.length);
+            } else {
+                currentIndex = (currentIndex + 1) % playlist.length;
+            }
             loadAndPlay();
         }
 
@@ -406,21 +451,55 @@
             loadAndPlay();
         }
 
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            document.getElementById('shuffle-btn').classList.toggle('active-mode', isShuffle);
+        }
+
+        function toggleRepeat() {
+            isRepeat = !isRepeat;
+            document.getElementById('repeat-btn').classList.toggle('active-mode', isRepeat);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                const url = URL.createObjectURL(file);
+                let name = file.name.replace(/\.[^/.]+$/, "");
+                let parts = name.split(" - ");
+                playlist.push({
+                    title: parts[1] || parts[0],
+                    artist: parts[1] ? parts[0] : "Локальний трек",
+                    url: url,
+                    art: null
+                });
+            }
+            updateUI();
+        }
+
         audio.ontimeupdate = () => {
             if (isNaN(audio.duration)) return;
-            const progress = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('progress-fill').style.width = `${progress}%`;
+            const percent = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
             
             const format = (t) => {
                 const m = Math.floor(t / 60);
                 const s = Math.floor(t % 60);
-                return m + ":" + s.toString().padStart(2, '0');
+                return `${m}:${s.toString().padStart(2, '0')}`;
             };
             document.getElementById('time-current').innerText = format(audio.currentTime);
             document.getElementById('time-total').innerText = format(audio.duration);
         };
 
-        audio.onended = next;
+        audio.onended = () => isRepeat ? audio.play() : next();
 
         document.getElementById('progress-area').onclick = (e) => {
             const rect = e.currentTarget.getBoundingClientRect();
@@ -428,8 +507,16 @@
             audio.currentTime = percent * audio.duration;
         };
 
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fs-icon');
+            icon.className = document.fullscreenElement ? "fas fa-compress" : "fas fa-expand";
+        });
+
         window.onload = updateUI;
     </script>
 </body>
 </html>
 
+
+
+                
